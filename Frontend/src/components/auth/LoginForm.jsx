@@ -3,7 +3,7 @@ import ProfileCarousel from "./ProfileCarousel"
 import { useGoogleLogin } from '@react-oauth/google';
 import PhoneLoginForm from './PhoneLoginForm';
 
-const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) => {
+const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading, apiError, setApiError }) => {
   const [role, setRole] = useState("student");
   const [formData, setFormData] = useState({
     email: '',
@@ -13,16 +13,33 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [showPhoneForm, setShowPhoneForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setLocalError(""); // Clear validation errors on typing
+    if (setApiError) setApiError(""); // Clear backend errors on typing
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setLocalError("");
+    if (setApiError) setApiError("");
+
+    const emailVal = formData.email.trim();
+    if (!emailVal) {
+      setLocalError("Please enter your email address.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailVal)) {
+      setLocalError("Please enter a valid email address (e.g., name@example.com).");
+      return;
+    }
     
-    onSubmit({ ...formData, role });
+    onSubmit({ ...formData, email: emailVal, role });
   };
 
   const handleCaptchaChange = (value) => {
@@ -44,7 +61,15 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
   });
 
   const handleGoogleButtonClick = () => {
+    setLocalError("");
     console.log("Google button clicked, selected role:", role);
+    
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === "your_google_client_id_here" || clientId === "") {
+      setLocalError("Google Login is not configured. Please set VITE_GOOGLE_CLIENT_ID in your Frontend environment variables.");
+      return;
+    }
+
     sessionStorage.setItem('selectedRole', role);
     console.log("Role stored in sessionStorage:", sessionStorage.getItem('selectedRole'));
     handleGoogleLogin();
@@ -56,6 +81,22 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
         <>
           {/* Main Heading */}
           <h1 className="text-3xl font-bold text-white mb-2">Log into Ment2Be</h1>
+
+          {(localError || apiError) && (
+            <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-sm flex items-center justify-between text-left">
+              <span>{localError || apiError}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLocalError("");
+                  if (setApiError) setApiError("");
+                }}
+                className="text-red-200 hover:text-white ml-2 focus:outline-none"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           
           {/* Subtitle */}
           <p className="text-gray-400 mb-8">
@@ -187,6 +228,22 @@ const LoginForm = ({ onSubmit, onNavigateToRegister, onGoogleAuth, isLoading }) 
                 I'm a mentor
               </button>
             </div>
+
+            {(localError || apiError) && (
+              <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-sm flex items-center justify-between text-left">
+                <span>{localError || apiError}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalError("");
+                    if (setApiError) setApiError("");
+                  }}
+                  className="text-red-200 hover:text-white ml-2 focus:outline-none"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-5">

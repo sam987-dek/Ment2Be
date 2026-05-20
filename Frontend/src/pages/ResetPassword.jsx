@@ -52,7 +52,11 @@ export default function ResetPassword() {
         setTokenValid(true);
         setIsValidating(false);
       } catch (err) {
-        setError('Error validating reset link: ' + err.message);
+        if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+          setError('Unable to connect to the server. Please check if the backend server is running and try again.');
+        } else {
+          setError('Error validating reset link: ' + err.message);
+        }
         setIsValidating(false);
       }
     };
@@ -99,7 +103,11 @@ export default function ResetPassword() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      setError(err.message);
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
+      } else {
+        setError(err.message);
+      }
     } finally {
       setIsLoading(false);
     }

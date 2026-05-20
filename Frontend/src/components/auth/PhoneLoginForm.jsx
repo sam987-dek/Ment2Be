@@ -10,6 +10,7 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
   });
   const [otpSent, setOtpSent] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
 
   const API_URL = "http://localhost:4000/api";
@@ -30,12 +31,31 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
 
   const handlePhoneChange = (e) => {
     const { name, value } = e.target;
+    setError(''); // Clear errors when typing
+    
+    if (name === 'phoneNumber' || name === 'otp') {
+      const sanitized = value.replace(/\D/g, ""); // Allow only digits
+      setPhoneData(prev => ({ ...prev, [name]: sanitized }));
+      return;
+    }
+    
     setPhoneData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Phone number length check before calling API
+    if (!phoneData.phoneNumber) {
+      setError("Phone number is required.");
+      return;
+    }
+    if (phoneData.phoneNumber.length < 7 || phoneData.phoneNumber.length > 15) {
+      setError("Please enter a valid phone number (7-15 digits).");
+      return;
+    }
+
     setOtpLoading(true);
     try {
       const response = await fetch(`${API_URL}/auth/phone/send-otp`, {
@@ -59,9 +79,13 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
       if (data.otp) {
         console.log("Development OTP:", data.otp);
       }
-    } catch (error) {
-      setError(error.message);
-      console.error("Error sending OTP:", error);
+    } catch (err) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
+      } else {
+        setError(err.message || "Failed to send OTP. Please try again.");
+      }
+      console.error("Error sending OTP:", err);
     } finally {
       setOtpLoading(false);
     }
@@ -70,6 +94,14 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
   const handlePhoneLogin = async (e) => {
     e.preventDefault();
     setError('');
+
+    // OTP format check
+    if (!phoneData.otp || phoneData.otp.length !== 6) {
+      setError("Please enter a valid 6-digit OTP.");
+      return;
+    }
+
+    setIsVerifying(true);
     try {
       const response = await fetch(`${API_URL}/auth/phone/verify-otp`, {
         method: "POST",
@@ -95,9 +127,15 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
       // Redirect to appropriate dashboard
       const dashboardUrl = data.user.role === "mentor" ? "/mentor/dashboard" : "/student/dashboard";
       navigate(dashboardUrl, { replace: true });
-    } catch (error) {
-      setError(error.message);
-      console.error("Error logging in with phone:", error);
+    } catch (err) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
+      } else {
+        setError(err.message || "Invalid OTP. Please try again.");
+      }
+      console.error("Error logging in with phone:", err);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -125,9 +163,13 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
       if (data.otp) {
         console.log("Development OTP:", data.otp);
       }
-    } catch (error) {
-      setError(error.message);
-      console.error("Error resending OTP:", error);
+    } catch (err) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
+      } else {
+        setError(err.message || "Failed to resend OTP. Please try again.");
+      }
+      console.error("Error resending OTP:", err);
     } finally {
       setOtpLoading(false);
     }
@@ -277,7 +319,8 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
                   onChange={handlePhoneChange}
                   required
                   maxLength="6"
-                  className="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-center text-2xl tracking-widest"
+                  disabled={isVerifying}
+                  className="w-full pl-10 pr-3 py-3 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none text-center text-2xl tracking-widest disabled:opacity-50"
                   placeholder="000000"
                 />
               </div>
@@ -285,14 +328,14 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isVerifying}
               className={`w-full py-3 rounded font-semibold transition-colors ${
-                isLoading 
+                isVerifying 
                   ? 'bg-gray-500 cursor-not-allowed' 
                   : 'bg-gray-600 hover:bg-gray-700'
               } text-white`}
             >
-              {isLoading ? (
+              {isVerifying ? (
                 <div className="flex items-center justify-center">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                   Verifying...
@@ -305,7 +348,7 @@ const PhoneLoginForm = ({ onBack, onNavigateToRegister, role, setRole, isLoading
             <button
               type="button"
               onClick={handleResendOtp}
-              disabled={otpLoading}
+              disabled={otpLoading || isVerifying}
               className="w-full text-sm text-blue-400 hover:text-blue-300 py-2 disabled:text-gray-500 disabled:cursor-not-allowed"
             >
               {otpLoading ? 'Resending...' : 'Didn\'t receive OTP? Resend'}

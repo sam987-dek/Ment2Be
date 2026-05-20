@@ -25,9 +25,13 @@ class ChatSocketService {
         userName: user.name
       },
       reconnection: true,
-      reconnectionDelay: 1000,
+      reconnectionDelay: 2000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 3
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.warn("Socket server unavailable:", error.message);
     });
 
     this.socket.on('connect', () => {

@@ -59,8 +59,6 @@ const Login = () => {
       console.log("Google login response:", data);
 
       if (!res.ok) {
-        setShowLoading(false);
-        setIsProcessingLogin(false);
         throw new Error(data.message || "Google login failed");
       }
 
@@ -75,17 +73,18 @@ const Login = () => {
         data.role === "mentor" ? "/mentor/dashboard" : "/student/dashboard";
       console.log("Redirecting to:", dashboardUrl);
 
-      // Clear processing state before redirect
-      setIsProcessingLogin(false);
-      setShowLoading(false);
-
       // Navigate to dashboard
       navigate(dashboardUrl, { replace: true });
     } catch (err) {
-      setShowLoading(false);
-      setIsProcessingLogin(false);
-      setError(err.message);
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
+      } else {
+        setError(err.message || "Google login failed. Please try again.");
+      }
       console.error("Google auth error:", err);
+    } finally {
+      setIsProcessingLogin(false);
+      setShowLoading(false);
     }
   };
 
@@ -186,6 +185,8 @@ const Login = () => {
       console.error(`[Login] Error:`, err);
       if (err.name === 'AbortError') {
         setError("Login request timed out. Please check your connection and try again.");
+      } else if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
       } else {
         setError(err.message || "Login failed. Please try again.");
       }
@@ -215,7 +216,6 @@ const Login = () => {
 
       const registerData = await registerRes.json();
       if (!registerRes.ok) {
-        setShowLoading(false);
         throw new Error(registerData.message || "Registration failed");
       }
 
@@ -231,7 +231,6 @@ const Login = () => {
 
       const loginData = await loginRes.json();
       if (!loginRes.ok) {
-        setShowLoading(false);
         throw new Error(
           loginData.message || "Auto-login after registration failed",
         );
@@ -248,18 +247,26 @@ const Login = () => {
         navigate("/student/dashboard");
       }
     } catch (err) {
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
+      } else {
+        setError(err.message || "Registration failed. Please try again.");
+      }
+      console.error("Registration error:", err);
+    } finally {
       setShowLoading(false);
-      setError(err.message);
     }
   };
 
   const handleNavigateToRegister = (role) => {
+    setError("");
     setIsRegistering(true);
     setRegisterRole(role);
     window.history.pushState({}, "", "/register");
   };
 
   const handleSwitchToLogin = () => {
+    setError("");
     setIsRegistering(false);
     window.history.pushState({}, "", "/login");
   };
@@ -319,6 +326,8 @@ const Login = () => {
               onSwitchToLogin={handleSwitchToLogin}
               role={registerRole}
               isLoading={showLoading}
+              apiError={error}
+              setApiError={setError}
             />
           ) : (
             <LoginForm
@@ -326,19 +335,9 @@ const Login = () => {
               onNavigateToRegister={handleNavigateToRegister}
               onGoogleAuth={handleGoogleAuth}
               isLoading={showLoading}
+              apiError={error}
+              setApiError={setError}
             />
-          )}
-
-          {error && (
-            <div className="relative mt-4 p-4 bg-red-900 border border-red-700 text-red-300 rounded-lg">
-              <button
-                onClick={() => setError("")}
-                className="absolute top-2 right-2 text-red-300 hover:text-white"
-              >
-                ✕
-              </button>
-              {error}
-            </div>
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
+const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading, apiError, setApiError }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,11 +23,24 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
     { code: "+65", country: "Singapore", flag: "🇸🇬", format: "8123 4567" },
   ];
   const [passwordError, setPasswordError] = useState("");
+  const [formError, setFormError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setFormError(""); // Clear errors on typing
+    if (setApiError) setApiError(""); // Clear backend errors on typing
+    
+    if (name === "phoneNumber") {
+      const sanitized = value.replace(/\D/g, ""); // Allow only digits
+      setFormData((prev) => ({
+        ...prev,
+        [name]: sanitized,
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -36,10 +49,38 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+    setFormError("");
+    if (setApiError) setApiError("");
+
+    // 1. Email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setFormError("Please enter a valid email address.");
       return;
     }
+
+    // 2. Phone number length validation
+    if (!formData.phoneNumber) {
+      setFormError("Phone number is required.");
+      return;
+    }
+    if (formData.phoneNumber.length < 7 || formData.phoneNumber.length > 15) {
+      setFormError("Please enter a valid phone number (7-15 digits).");
+      return;
+    }
+
+    // 3. Password length check
+    if (formData.password.length < 8) {
+      setFormError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    // 4. Confirm password matching
+    if (formData.password !== formData.confirmPassword) {
+      setFormError("Passwords do not match!");
+      return;
+    }
+
     // Combine country code and phone number
     const fullPhoneNumber = formData.countryCode + formData.phoneNumber;
     onSubmit({ ...formData, phoneNumber: fullPhoneNumber, role });
@@ -80,6 +121,22 @@ const RegisterForm = ({ onSubmit, onSwitchToLogin, role, isLoading }) => {
           Log in
         </button>
       </p>
+
+      {(formError || apiError) && (
+        <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-4 text-sm flex items-center justify-between">
+          <span>{formError || apiError}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setFormError("");
+              if (setApiError) setApiError("");
+            }}
+            className="text-red-200 hover:text-white ml-2 focus:outline-none"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

@@ -38,7 +38,11 @@ export default function ForgotPassword() {
 
       setSuccess(true);
     } catch (err) {
-      setError(err.message);
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError("Unable to connect to the server. Please check if the backend server is running and try again.");
+      } else {
+        setError(err.message);
+      }
     } finally {
       setIsLoading(false);
     }
