@@ -90,7 +90,7 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#000000] relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#000000] relative overflow-x-hidden">
       <style>{`
         @keyframes slideInUp {
           from {
@@ -325,7 +325,7 @@ const LandingPage = () => {
       </div>
 
       {/* Black Space with Texture - Blended from Previous Section */}
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] relative overflow-hidden" id="connect-mentors-section">
+      <div className="bg-slate-50 dark:bg-[#000000] relative overflow-x-hidden" id="connect-mentors-section">
         {/* Starry Night Effect */}
         <div 
           className="absolute inset-0 dark:block hidden"
@@ -487,7 +487,7 @@ const LandingPage = () => {
         </div>
 
       {/* New Section with Color Blend Background */}
-      <div className="w-full py-32 relative overflow-hidden">
+      <div className="w-full py-32 relative overflow-x-hidden">
         <div
           className="absolute inset-0 dark:block hidden"
           style={{
@@ -595,11 +595,6 @@ const LandingPage = () => {
           </div>
       </div>
 
-      {/* Footer with Ment2Be Branding */}
-      <div className="relative z-10 py-16 px-6 bg-slate-50 dark:bg-[#171717]">
-        <div className="max-w-6xl mx-auto text-center">
-        </div>
-      </div>
       </div>
       <LandingFooter />
     </div>
